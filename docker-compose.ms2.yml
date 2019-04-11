@@ -1,0 +1,24 @@
+version: '2.4'
+
+services:
+
+  ms2:
+    image: ${IMAGE_NAME:-ms2}
+    container_name: ms2
+    build:
+      context: ${BUILD_DIR:-./ms2}
+    restart: always
+    command: ${COMMAND:-start}
+    ports:
+    - 3102:80
+    environment:
+    - ACCESS_CONTROL_ALLOW_ORIGIN
+    volumes:
+    - ${MOUNT_VOLUME:-./ms2:/opt/app}
+    - ~/.bash_history:/root/.bash_history
+    - ./tools/.bashrc:/root/.bashrc
+
+networks:
+  default:
+    external:
+      name: RMQ-example

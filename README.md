@@ -1,1 +1,1 @@
-# RMQ
+# RMQ example

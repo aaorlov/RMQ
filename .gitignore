@@ -1,0 +1,9 @@
+## common
+.idea/*
+.DS_Store
+
+# ms1
+ms1/node_modules/
+
+# ms2
+ms2/node_modules/
