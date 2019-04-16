@@ -2,6 +2,7 @@ const express = require('express')
 const logger = require('morgan')
 const bodyParser = require('body-parser')
 const cors = require('cors')
+import { MessagingFactory } from "./utils";
 
 const app = express()
 
@@ -14,6 +15,12 @@ app.use(express.urlencoded({ extended: false }))
 app.use('/test', require('./routes/test'))
 
 app.use(errorHandler)
+
+const publisher = MessagingFactory.createConsumer('ms2-consumer-client-id')
+publisher.listen('publisher-id-test-exchange', 'test-event-routing-key', message => {
+  console.log(message.content)
+  message.ack()
+})
 
 module.exports = app
 

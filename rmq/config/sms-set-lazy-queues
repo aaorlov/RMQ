@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+echo "Checking if the lazy-queue policy exists... If not, let's skip this step."
+    POLICY_RETURN_VALUE=$(curl -s -u $ADMIN:$PW_SEED -H \
+    "content-type:application/json" \
+    -XGET "http://$MQ_NODE_HOST:$MQ_NODE_PORT/api/policies/%2F/lazy-queues")
+
+    echo "Return value after checking the existence of lazy-queues: $POLICY_RETURN_VALUE"
+
+    POLICY_RETURN_ERROR=$(echo $POLICY_RETURN_VALUE | jq '.error')
+
+    echo "Error value: $POLICY_RETURN_ERROR"
+echo
+
+if [[ $POLICY_RETURN_ERROR == '"Object Not Found"' ]]; then
+    echo "lazy-queues policy does not exist, let's create it!"
+    starttime=$(date +%s)
+
+    echo "PUT lazy-queues policy"
+    echo
+        curl -i -u $ADMIN:$PW_SEED -H \
+        "content-type:application/json" \
+        -XPUT -d"{\"pattern\": \"^.*[.].*[.](dead|queue)\", \"definition\": {\"queue-mode\":\"lazy\"}, \"apply-to\": \"queues\", \"priority\": 1}" \
+        "http://$MQ_NODE_HOST:$MQ_NODE_PORT/api/policies/%2F/lazy-queues"
+    echo
+    echo
+
+    echo "Total execution time : $(($(date +%s)-starttime)) secs ..."
+fi
+

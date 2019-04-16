@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+echo "Checking if $ADMIN exists... If not, let's skip this step."
+    CHECK_ADMIN_OUTPUT=$(curl -s -u $ADMIN:$PW_SEED -H \
+    "content-type:application/json" \
+    -XGET "http://$MQ_NODE_HOST:$MQ_NODE_PORT/api/users/$ADMIN" | jq '.error')
+
+    if [ "$CHECK_ADMIN_OUTPUT" == "\"not_authorised\"" ]; then
+        CHECK_ADMIN_OUTPUT=$(curl -s -u guest:guest -H \
+        "content-type:application/json" \
+        -XGET "http://$MQ_NODE_HOST:$MQ_NODE_PORT/api/users/$ADMIN" | jq '.error')
+    fi
+echo
+
+if [ "$CHECK_ADMIN_OUTPUT" == "\"Object Not Found\"" ]; then
+    echo "$ADMIN does not exist, let's create it!"
+    starttime=$(date +%s)
+
+    #Password generation using the password seed informed
+    PASSWORD_HASH=$(password-hash-gen $PW_SEED)
+    echo
+    echo "Password hash generated: $PASSWORD_HASH"
+    echo
+
+    echo "PUT a new administrator called $ADMIN"
+    echo
+        curl -i -u guest:guest -H \
+        "content-type:application/json" \
+        -XPUT -d"{\"password_hash\":\"$PASSWORD_HASH\",\"tags\":\"administrator\"}" \
+        "http://$MQ_NODE_HOST:$MQ_NODE_PORT/api/users/$ADMIN"
+    echo
+    echo
+
+    echo "PUT admin permissions for $ADMIN"
+    echo
+        curl -i -u guest:guest -H \
+        "content-type:application/json" \
+        -XPUT -d"{\"configure\":\".*\",\"write\":\".*\",\"read\":\".*\"}" \
+        "http://$MQ_NODE_HOST:$MQ_NODE_PORT/api/permissions/%2F/$ADMIN"
+    echo
+    echo
+
+    echo "POST the deletion of 'guest' user"
+    echo
+        curl -i -u $ADMIN:$PW_SEED -H \
+        "content-type:application/json" \
+        -XPOST -d"{\"users\": [\"guest\"]}" \
+        "http://$MQ_NODE_HOST:$MQ_NODE_PORT/api/users/bulk-delete"
+    echo
+    echo
+
+    echo "Total execution time : $(($(date +%s)-starttime)) secs ..."
+fi
+

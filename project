@@ -31,6 +31,16 @@ docker_compose_proxy () {
     exit 1
   fi
 
+  if [[ $1 = up ]] && [[ ! -d .db/rabbitmqdata ]]; then
+    # create rabbitmq directories with permissions 777
+    # otherwise rabbitmq won't work because it's running from user 999
+    echo "Creating rabbitmq directories with correct permissions"
+    mkdir -p .db/rabbitmqdata/internal-mq-node-1 \
+      .db/rabbitmqdata/internal-mq-node-2
+    chmod -R 777 .db/rabbitmqdata
+  fi
+
+
   # create docker network in which all our services will be running
   if [[ $1 = up ]] && ! (docker network ls | grep -q " RMQ-example "); then
     echo -n "Creating new docker network 'RMQ-example' ... "

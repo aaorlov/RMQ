@@ -4,6 +4,10 @@
 
 # ms1
 ms1/node_modules/
+ms1/dist
 
 # ms2
 ms2/node_modules/
+ms2/dist
+
+.db/*

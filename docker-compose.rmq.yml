@@ -1,0 +1,61 @@
+version: '3.4'
+
+services:
+
+  internal-mq-node-1:
+    image: rmq-cluster
+    build:
+      context: ./rmq
+    container_name: internal-mq-node-1
+    hostname: ${INTERNAL_MQ_HOST}
+    environment:
+      - ERLANG_COOKIE=${RABBITMQ_ERLANG_COOKIE}
+      - MQ_NODE_HOST=localhost
+      - MQ_NODE_PORT=15672
+      - ADMIN=${INTERNAL_MQ_USERNAME}
+      - PW_SEED=${INTERNAL_MQ_PASSWORD}
+    volumes:
+      - ./.db/rabbitmqdata/internal-mq-node-1:/var/lib/rabbitmq/mnesia
+    ports:
+      - ${PORT_1:-5672}:5672
+      - ${PORT_2:-15672}:15672
+
+  # In order to have more nodes within the cluster, add snippets like this changing ports mapping, service name and hostname
+  internal-mq-node-2:
+    image: rmq-cluster
+    build:
+      context: ./rmq
+    container_name: internal-mq-node-2
+    hostname: internal-mq-node-2
+    links:
+      - internal-mq-node-1
+    environment:
+      - ERLANG_COOKIE=${RABBITMQ_ERLANG_COOKIE}
+      - CLUSTER_WITH=${INTERNAL_MQ_HOST}
+      - ENABLE_RAM=true
+    volumes:
+      - ./.db/rabbitmqdata/internal-mq-node-2:/var/lib/rabbitmq/mnesia
+
+  # We run this service in order to create the admin user once the bootstrap node of the cluster (komgo-internal-mq-node-1) is up and running
+  configure-dev-internal:
+    build:
+      context: ./rmq/config
+      dockerfile: Dockerfile.create.admin
+    container_name: internal-mq-config
+    restart: on-failure
+    environment:
+      - MQ_NODE_HOST=${INTERNAL_MQ_HOST}
+      - MQ_NODE_PORT=15672
+      - ADMIN=${INTERNAL_MQ_USERNAME}
+      - PW_SEED=${INTERNAL_MQ_PASSWORD}
+    volumes:
+      - ${PWD}/rmq/config/wait-for-it:/usr/local/bin/wait-for-it:ro
+      - ${PWD}/rmq/config/create-admin:/usr/local/bin/create-admin:ro
+      - ${PWD}/rmq/config/password-hash-gen:/usr/local/bin/password-hash-gen:ro
+    command: >
+      bash -c "wait-for-it $INTERNAL_MQ_HOST:15672 && create-admin"
+
+networks:
+  default:
+    external:
+      name: RMQ-example

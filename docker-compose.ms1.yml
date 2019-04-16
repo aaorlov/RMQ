@@ -13,6 +13,9 @@ services:
       - 3101:80
     environment:
       - ACCESS_CONTROL_ALLOW_ORIGIN
+      - INTERNAL_MQ_HOST
+      - INTERNAL_MQ_USERNAME
+      - INTERNAL_MQ_PASSWORD
     volumes:
       - ${MOUNT_VOLUME:-./ms1:/opt/app}
       - ~/.bash_history:/root/.bash_history

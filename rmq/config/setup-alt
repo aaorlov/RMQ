@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# This script setups new alternative exchange and creates broker-wide
+# policy that puts any kind of unrouted message into it
+
+# Setup alternate exchange:
+curl -i -u $ADMIN:$PW_SEED -H "content-type:application/json" \
+    -XPUT -d'{"type":"fanout", "durable":true, "arguments":{}}' \
+    "http://$MQ_NODE_HOST:$MQ_NODE_PORT/api/exchanges/%2F/alternate"
+
+
+# Setup alternate exchange queue:
+curl -i -u $ADMIN:$PW_SEED -H \
+    "content-type:application/json" \
+    -XPUT -d'{"durable":true,"arguments":{}}' \
+    "http://$MQ_NODE_HOST:$MQ_NODE_PORT/api/queues/%2F/alternate-queue"
+
+
+# Bind alternate exchange queue:
+curl -i -u $ADMIN:$PW_SEED -H "content-type:application/json" \
+    -XPOST -d"{\"routing_key\":\"\", \"arguments\":{}}" \
+    "http://$MQ_NODE_HOST:$MQ_NODE_PORT/api/bindings/%2F/e/alternate/q/alternate-queue"
+
+
+# Bind alternate exchange queue:
+curl -i -u $ADMIN:$PW_SEED -H "content-type:application/json" \
+    -XPUT -d"{\"pattern\": \"^\", \"definition\": {\"alternate-exchange\":\"alternate\"}, \"apply-to\": \"exchanges\", \"priority\": 1}" \
+    "http://$MQ_NODE_HOST:$MQ_NODE_PORT/api/policies/%2F/alternate-exchange"
+    
